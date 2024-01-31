@@ -3,6 +3,8 @@
   handlers:
     - name: restart sshd
       service:
+        name: sshd
+        state: restarted
   tasks:
     - lineinfile:
         path: /etc/ssh/sshd_config
