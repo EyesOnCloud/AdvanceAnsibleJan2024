@@ -1,0 +1,40 @@
+---
+- hosts: "controller"
+  become: yes
+  tasks:
+    - name: enabling nfs-server service
+      service:
+        name: nfs-server
+        state: started
+        enabled: true
+    - name: Create directory
+      file:
+        path: /srv/nfs/kubedata
+        state: directory
+        mode: '0755'
+    - name: configure directory
+      shell: |
+        cat > /etc/exports <<EOF
+        /srv/nfs/kubedata    *(rw,sync,no_root_squash,insecure)
+        EOF
+    - name: exporting the variables
+      shell: exportfs -avr
+    - name: creating the pv.yml file
+      shell: |
+        cat> pv.yml <<EOF
+        apiVersion: v1
+        kind: PersistentVolume
+        metadata:
+          name: pv-static-nfs
+        spec:
+          capacity:
+            storage: 50Gi
+          accessModes:
+            - ReadWriteOnce
+          persistentVolumeReclaimPolicy: Recycle
+          nfs:
+            path: /srv/nfs/kubedata
+            server: 192.168.100.150
+        EOF
+    - name: apply the pv
+      shell: kubectl apply -f pv.yml
